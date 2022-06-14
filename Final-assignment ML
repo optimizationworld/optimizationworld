@@ -1,0 +1,579 @@
+import itertools
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.ticker import NullFormatter
+import pandas as pd
+import numpy as np
+import matplotlib.ticker as ticker
+from sklearn import preprocessing
+%matplotlib inline
+
+
+!wget -O loan_train.csv https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBMDeveloperSkillsNetwork-ML0101EN-SkillsNetwork/labs/FinalModule_Coursera/data/loan_train.csv
+
+
+Load Data From CSV File
+df = pd.read_csv('loan_train.csv')
+df.head()
+Unnamed: 0	Unnamed: 0.1	loan_status	Principal	terms	effective_date	due_date	age	education	Gender
+0	0	0	PAIDOFF	1000	30	9/8/2016	10/7/2016	45	High School or Below	male
+1	2	2	PAIDOFF	1000	30	9/8/2016	10/7/2016	33	Bechalor	female
+2	3	3	PAIDOFF	1000	15	9/8/2016	9/22/2016	27	college	male
+3	4	4	PAIDOFF	1000	30	9/9/2016	10/8/2016	28	college	female
+4	6	6	PAIDOFF	1000	30	9/9/2016	10/8/2016	29	college	male
+
+
+df.shape
+(346, 10)
+Convert to date time object
+df['due_date'] = pd.to_datetime(df['due_date'])
+df['effective_date'] = pd.to_datetime(df['effective_date'])
+df.head()
+Unnamed: 0	Unnamed: 0.1	loan_status	Principal	terms	effective_date	due_date	age	education	Gender
+0	0	0	PAIDOFF	1000	30	2016-09-08	2016-10-07	45	High School or Below	male
+1	2	2	PAIDOFF	1000	30	2016-09-08	2016-10-07	33	Bechalor	female
+2	3	3	PAIDOFF	1000	15	2016-09-08	2016-09-22	27	college	male
+3	4	4	PAIDOFF	1000	30	2016-09-09	2016-10-08	28	college	female
+4	6	6	PAIDOFF	1000	30	2016-09-09	2016-10-08	29	college	male
+
+Data visualization and pre-processing
+Let’s see how many of each class is in our data set
+
+df['loan_status'].value_counts()
+PAIDOFF       260
+COLLECTION     86
+Name: loan_status, dtype: int64
+260 people have paid off the loan on time while 86 have gone into collection
+
+Let's plot some columns to underestand data better:
+
+# notice: installing seaborn might takes a few minutes
+!conda install -c anaconda seaborn -y
+Collecting package metadata (current_repodata.json): ...working... done
+Solving environment: ...working... done
+
+## Package Plan ##
+
+  environment location: C:\Users\khonj\anaconda3
+
+  added / updated specs:
+    - seaborn
+
+
+The following packages will be downloaded:
+
+    package                    |            build
+    ---------------------------|-----------------
+    ca-certificates-2021.10.26 |       haa95532_2         151 KB  anaconda
+    certifi-2021.10.8          |   py39haa95532_0         155 KB  anaconda
+    conda-4.12.0               |   py39haa95532_0        17.0 MB  anaconda
+    openssl-1.1.1l             |       h2bbff1b_0         5.7 MB  anaconda
+    seaborn-0.11.2             |     pyhd3eb1b0_0         223 KB  anaconda
+    ------------------------------------------------------------
+                                           Total:        23.2 MB
+
+The following packages will be SUPERSEDED by a higher-priority channel:
+
+  ca-certificates                                 pkgs/main --> anaconda
+  certifi                                         pkgs/main --> anaconda
+  conda                                           pkgs/main --> anaconda
+  openssl                                         pkgs/main --> anaconda
+  seaborn                                         pkgs/main --> anaconda
+
+
+
+Downloading and Extracting Packages
+
+seaborn-0.11.2       | 223 KB    |            |   0% 
+seaborn-0.11.2       | 223 KB    | 7          |   7% 
+seaborn-0.11.2       | 223 KB    | #####7     |  57% 
+seaborn-0.11.2       | 223 KB    | ########## | 100% 
+seaborn-0.11.2       | 223 KB    | ########## | 100% 
+
+conda-4.12.0         | 17.0 MB   |            |   0% 
+conda-4.12.0         | 17.0 MB   |            |   0% 
+conda-4.12.0         | 17.0 MB   |            |   1% 
+conda-4.12.0         | 17.0 MB   |            |   1% 
+conda-4.12.0         | 17.0 MB   | 1          |   1% 
+conda-4.12.0         | 17.0 MB   | 1          |   2% 
+conda-4.12.0         | 17.0 MB   | 2          |   2% 
+conda-4.12.0         | 17.0 MB   | 3          |   3% 
+conda-4.12.0         | 17.0 MB   | 4          |   4% 
+conda-4.12.0         | 17.0 MB   | 4          |   4% 
+conda-4.12.0         | 17.0 MB   | 5          |   6% 
+conda-4.12.0         | 17.0 MB   | 6          |   6% 
+conda-4.12.0         | 17.0 MB   | 6          |   7% 
+conda-4.12.0         | 17.0 MB   | 8          |   8% 
+conda-4.12.0         | 17.0 MB   | 8          |   9% 
+conda-4.12.0         | 17.0 MB   | 9          |  10% 
+conda-4.12.0         | 17.0 MB   | #1         |  12% 
+conda-4.12.0         | 17.0 MB   | #2         |  12% 
+conda-4.12.0         | 17.0 MB   | #2         |  13% 
+conda-4.12.0         | 17.0 MB   | #4         |  15% 
+conda-4.12.0         | 17.0 MB   | #5         |  15% 
+conda-4.12.0         | 17.0 MB   | #6         |  16% 
+conda-4.12.0         | 17.0 MB   | #7         |  18% 
+conda-4.12.0         | 17.0 MB   | #8         |  19% 
+conda-4.12.0         | 17.0 MB   | #9         |  20% 
+conda-4.12.0         | 17.0 MB   | ##         |  20% 
+conda-4.12.0         | 17.0 MB   | ##2        |  23% 
+conda-4.12.0         | 17.0 MB   | ##7        |  27% 
+conda-4.12.0         | 17.0 MB   | ##7        |  28% 
+conda-4.12.0         | 17.0 MB   | ##8        |  28% 
+conda-4.12.0         | 17.0 MB   | ##9        |  30% 
+conda-4.12.0         | 17.0 MB   | ###        |  31% 
+conda-4.12.0         | 17.0 MB   | ###1       |  31% 
+conda-4.12.0         | 17.0 MB   | ###2       |  32% 
+conda-4.12.0         | 17.0 MB   | ###4       |  34% 
+conda-4.12.0         | 17.0 MB   | ###4       |  35% 
+conda-4.12.0         | 17.0 MB   | ###7       |  37% 
+conda-4.12.0         | 17.0 MB   | ###8       |  38% 
+conda-4.12.0         | 17.0 MB   | ####       |  41% 
+conda-4.12.0         | 17.0 MB   | ####1      |  42% 
+conda-4.12.0         | 17.0 MB   | ####2      |  42% 
+conda-4.12.0         | 17.0 MB   | ####5      |  45% 
+conda-4.12.0         | 17.0 MB   | ####6      |  46% 
+conda-4.12.0         | 17.0 MB   | ####6      |  47% 
+conda-4.12.0         | 17.0 MB   | ####7      |  48% 
+conda-4.12.0         | 17.0 MB   | ####9      |  49% 
+conda-4.12.0         | 17.0 MB   | #####      |  51% 
+conda-4.12.0         | 17.0 MB   | #####1     |  51% 
+conda-4.12.0         | 17.0 MB   | #####3     |  54% 
+conda-4.12.0         | 17.0 MB   | #####4     |  55% 
+conda-4.12.0         | 17.0 MB   | #####8     |  59% 
+conda-4.12.0         | 17.0 MB   | ######     |  60% 
+conda-4.12.0         | 17.0 MB   | ######1    |  61% 
+conda-4.12.0         | 17.0 MB   | ######4    |  65% 
+conda-4.12.0         | 17.0 MB   | ######5    |  66% 
+conda-4.12.0         | 17.0 MB   | ######6    |  67% 
+conda-4.12.0         | 17.0 MB   | ######7    |  68% 
+conda-4.12.0         | 17.0 MB   | ######8    |  69% 
+conda-4.12.0         | 17.0 MB   | ######9    |  70% 
+conda-4.12.0         | 17.0 MB   | #######    |  70% 
+conda-4.12.0         | 17.0 MB   | #######2   |  73% 
+conda-4.12.0         | 17.0 MB   | #######3   |  73% 
+conda-4.12.0         | 17.0 MB   | #######4   |  74% 
+conda-4.12.0         | 17.0 MB   | #######7   |  78% 
+conda-4.12.0         | 17.0 MB   | #######9   |  79% 
+conda-4.12.0         | 17.0 MB   | ########   |  80% 
+conda-4.12.0         | 17.0 MB   | ########3  |  84% 
+conda-4.12.0         | 17.0 MB   | ########4  |  84% 
+conda-4.12.0         | 17.0 MB   | ########9  |  89% 
+conda-4.12.0         | 17.0 MB   | #########  |  90% 
+conda-4.12.0         | 17.0 MB   | #########  |  91% 
+conda-4.12.0         | 17.0 MB   | #########1 |  92% 
+conda-4.12.0         | 17.0 MB   | #########2 |  92% 
+conda-4.12.0         | 17.0 MB   | #########2 |  93% 
+conda-4.12.0         | 17.0 MB   | #########3 |  93% 
+conda-4.12.0         | 17.0 MB   | #########3 |  93% 
+conda-4.12.0         | 17.0 MB   | #########5 |  96% 
+conda-4.12.0         | 17.0 MB   | #########6 |  96% 
+conda-4.12.0         | 17.0 MB   | #########7 |  97% 
+conda-4.12.0         | 17.0 MB   | ########## | 100% 
+conda-4.12.0         | 17.0 MB   | ########## | 100% 
+
+openssl-1.1.1l       | 5.7 MB    |            |   0% 
+openssl-1.1.1l       | 5.7 MB    |            |   0% 
+openssl-1.1.1l       | 5.7 MB    | #1         |  12% 
+openssl-1.1.1l       | 5.7 MB    | #3         |  13% 
+==> WARNING: A newer version of conda exists. <==
+  current version: 4.12.0
+  latest version: 4.13.0
+
+Please update conda by running
+
+    $ conda update -n base -c defaults conda
+
+
+openssl-1.1.1l       | 5.7 MB    | #8         |  19% 
+openssl-1.1.1l       | 5.7 MB    | ##         |  21% 
+openssl-1.1.1l       | 5.7 MB    | ##8        |  29% 
+openssl-1.1.1l       | 5.7 MB    | ###1       |  32% 
+openssl-1.1.1l       | 5.7 MB    | ####       |  40% 
+openssl-1.1.1l       | 5.7 MB    | ####2      |  43% 
+openssl-1.1.1l       | 5.7 MB    | ####4      |  44% 
+openssl-1.1.1l       | 5.7 MB    | #####1     |  52% 
+openssl-1.1.1l       | 5.7 MB    | ######3    |  64% 
+openssl-1.1.1l       | 5.7 MB    | ######6    |  66% 
+openssl-1.1.1l       | 5.7 MB    | ######8    |  68% 
+openssl-1.1.1l       | 5.7 MB    | #######6   |  76% 
+openssl-1.1.1l       | 5.7 MB    | #######9   |  80% 
+openssl-1.1.1l       | 5.7 MB    | ########2  |  82% 
+openssl-1.1.1l       | 5.7 MB    | #########  |  90% 
+openssl-1.1.1l       | 5.7 MB    | #########2 |  93% 
+openssl-1.1.1l       | 5.7 MB    | #########5 |  95% 
+openssl-1.1.1l       | 5.7 MB    | ########## | 100% 
+openssl-1.1.1l       | 5.7 MB    | ########## | 100% 
+
+ca-certificates-2021 | 151 KB    |            |   0% 
+ca-certificates-2021 | 151 KB    | #          |  11% 
+ca-certificates-2021 | 151 KB    | ########## | 100% 
+
+certifi-2021.10.8    | 155 KB    |            |   0% 
+certifi-2021.10.8    | 155 KB    | #          |  10% 
+certifi-2021.10.8    | 155 KB    | #######2   |  72% 
+certifi-2021.10.8    | 155 KB    | ########## | 100% 
+Preparing transaction: ...working... done
+Verifying transaction: ...working... done
+Executing transaction: ...working... done
+import seaborn as sns
+
+bins = np.linspace(df.Principal.min(), df.Principal.max(), 10)
+g = sns.FacetGrid(df, col="Gender", hue="loan_status", palette="Set1", col_wrap=2)
+g.map(plt.hist, 'Principal', bins=bins, ec="k")
+
+g.axes[-1].legend()
+plt.show()
+
+bins = np.linspace(df.age.min(), df.age.max(), 10)
+g = sns.FacetGrid(df, col="Gender", hue="loan_status", palette="Set1", col_wrap=2)
+g.map(plt.hist, 'age', bins=bins, ec="k")
+
+g.axes[-1].legend()
+plt.show()
+
+Pre-processing: Feature selection/extraction
+Let's look at the day of the week people get the loan
+df['dayofweek'] = df['effective_date'].dt.dayofweek
+bins = np.linspace(df.dayofweek.min(), df.dayofweek.max(), 10)
+g = sns.FacetGrid(df, col="Gender", hue="loan_status", palette="Set1", col_wrap=2)
+g.map(plt.hist, 'dayofweek', bins=bins, ec="k")
+g.axes[-1].legend()
+plt.show()
+
+We see that people who get the loan at the end of the week don't pay it off, so let's use Feature binarization to set a threshold value less than day 4
+
+df['weekend'] = df['dayofweek'].apply(lambda x: 1 if (x>3)  else 0)
+df.head()
+Unnamed: 0	Unnamed: 0.1	loan_status	Principal	terms	effective_date	due_date	age	education	Gender	dayofweek	weekend
+0	0	0	PAIDOFF	1000	30	2016-09-08	2016-10-07	45	High School or Below	male	3	0
+1	2	2	PAIDOFF	1000	30	2016-09-08	2016-10-07	33	Bechalor	female	3	0
+2	3	3	PAIDOFF	1000	15	2016-09-08	2016-09-22	27	college	male	3	0
+3	4	4	PAIDOFF	1000	30	2016-09-09	2016-10-08	28	college	female	4	1
+4	6	6	PAIDOFF	1000	30	2016-09-09	2016-10-08	29	college	male	4	1
+Convert Categorical features to numerical values
+Let's look at gender:
+
+df.groupby(['Gender'])['loan_status'].value_counts(normalize=True)
+Gender  loan_status
+female  PAIDOFF        0.865385
+        COLLECTION     0.134615
+male    PAIDOFF        0.731293
+        COLLECTION     0.268707
+Name: loan_status, dtype: float64
+86 % of female pay there loans while only 73 % of males pay there loan
+
+Let's convert male to 0 and female to 1:
+
+df['Gender'].replace(to_replace=['male','female'], value=[0,1],inplace=True)
+df.head()
+Unnamed: 0	Unnamed: 0.1	loan_status	Principal	terms	effective_date	due_date	age	education	Gender	dayofweek	weekend
+0	0	0	PAIDOFF	1000	30	2016-09-08	2016-10-07	45	High School or Below	0	3	0
+1	2	2	PAIDOFF	1000	30	2016-09-08	2016-10-07	33	Bechalor	1	3	0
+2	3	3	PAIDOFF	1000	15	2016-09-08	2016-09-22	27	college	0	3	0
+3	4	4	PAIDOFF	1000	30	2016-09-09	2016-10-08	28	college	1	4	1
+4	6	6	PAIDOFF	1000	30	2016-09-09	2016-10-08	29	college	0	4	1
+One Hot Encoding
+How about education?
+df.groupby(['education'])['loan_status'].value_counts(normalize=True)
+education             loan_status
+Bechalor              PAIDOFF        0.750000
+                      COLLECTION     0.250000
+High School or Below  PAIDOFF        0.741722
+                      COLLECTION     0.258278
+Master or Above       COLLECTION     0.500000
+                      PAIDOFF        0.500000
+college               PAIDOFF        0.765101
+                      COLLECTION     0.234899
+Name: loan_status, dtype: float64
+Features before One Hot Encoding
+df[['Principal','terms','age','Gender','education']].head()
+Principal	terms	age	Gender	education
+0	1000	30	45	0	High School or Below
+1	1000	30	33	1	Bechalor
+2	1000	15	27	0	college
+3	1000	30	28	1	college
+4	1000	30	29	0	college
+Use one hot encoding technique to conver categorical varables to binary variables and append them to the feature Data Frame
+Feature = df[['Principal','terms','age','Gender','weekend']]
+Feature = pd.concat([Feature,pd.get_dummies(df['education'])], axis=1)
+Feature.drop(['Master or Above'], axis = 1,inplace=True)
+Feature.head()
+Principal	terms	age	Gender	weekend	Bechalor	High School or Below	college
+0	1000	30	45	0	0	0	1	0
+1	1000	30	33	1	0	1	0	0
+2	1000	15	27	0	0	0	0	1
+3	1000	30	28	1	1	0	0	1
+4	1000	30	29	0	1	0	0	1
+Feature Selection
+Let's define feature sets, X:
+
+X = Feature
+X[0:5]
+Principal	terms	age	Gender	weekend	Bechalor	High School or Below	college
+0	1000	30	45	0	0	0	1	0
+1	1000	30	33	1	0	1	0	0
+2	1000	15	27	0	0	0	0	1
+3	1000	30	28	1	1	0	0	1
+4	1000	30	29	0	1	0	0	1
+What are our lables?
+
+y = df['loan_status'].values
+y[0:5]
+array(['PAIDOFF', 'PAIDOFF', 'PAIDOFF', 'PAIDOFF', 'PAIDOFF'],
+      dtype=object)
+Normalize Data
+Data Standardization give data zero mean and unit variance (technically should be done after train test split)
+
+X= preprocessing.StandardScaler().fit(X).transform(X)
+X[0:5]
+array([[ 0.51578458,  0.92071769,  2.33152555, -0.42056004, -1.20577805,
+        -0.38170062,  1.13639374, -0.86968108],
+       [ 0.51578458,  0.92071769,  0.34170148,  2.37778177, -1.20577805,
+         2.61985426, -0.87997669, -0.86968108],
+       [ 0.51578458, -0.95911111, -0.65321055, -0.42056004, -1.20577805,
+        -0.38170062, -0.87997669,  1.14984679],
+       [ 0.51578458,  0.92071769, -0.48739188,  2.37778177,  0.82934003,
+        -0.38170062, -0.87997669,  1.14984679],
+       [ 0.51578458,  0.92071769, -0.3215732 , -0.42056004,  0.82934003,
+        -0.38170062, -0.87997669,  1.14984679]])
+Classification
+Now, it is your turn, use the training set to build an accurate model. Then use the test set to report the accuracy of the model You should use the following algorithm:
+
+K Nearest Neighbor(KNN)
+Decision Tree
+Support Vector Machine
+Logistic Regression
+__ Notice:__
+
+You can go above and change the pre-processing, feature selection, feature-extraction, and so on, to make a better model.
+You should use either scikit-learn, Scipy or Numpy libraries for developing the classification algorithms.
+You should include the code of the algorithm in the following cells.
+K Nearest Neighbor(KNN)
+Notice: You should find the best k to build the model with the best accuracy.\ warning: You should not use the loan_test.csv for finding the best k, however, you can split your train_loan.csv into train and test to find the best k.
+
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import classification_report, confusion_matrix
+
+#Splitting data into train and test set
+X_train, X_test, y_train, y_test = train_test_split(X,y, test_size=.2, random_state=0)
+print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
+print()
+print(X_train[0:5])
+(276, 8) (70, 8) (276,) (70,)
+
+[[ 0.51578458  0.92071769 -0.65321055 -0.42056004 -1.20577805 -0.38170062
+   1.13639374 -0.86968108]
+ [-1.31458942 -0.95911111  2.16570687  2.37778177  0.82934003 -0.38170062
+   1.13639374 -0.86968108]
+ [ 0.51578458  0.92071769 -0.15575453 -0.42056004 -1.20577805 -0.38170062
+  -0.87997669  1.14984679]
+ [-1.31458942 -0.95911111 -0.3215732  -0.42056004  0.82934003 -0.38170062
+  -0.87997669  1.14984679]
+ [ 0.51578458  0.92071769 -0.81902922  2.37778177  0.82934003 -0.38170062
+  -0.87997669  1.14984679]]
+k=15
+mean_acc = np.zeros((k-1))
+std_acc=np.zeros((k-1))
+
+for n in range(1,k):
+    #Train Model and Predict 
+    neig = KNeighborsClassifier(n_neighbors =n).fit(X_train, y_train)
+    yhat = neig.predict(X_test)
+    mean_acc[n-1]=np.mean(yhat==y_test);
+    
+    #std_acc[n-1]=np.std(yhat==y_test)/np.sqrt(yhat.shape[0])
+    
+mean_acc
+array([0.65714286, 0.57142857, 0.7       , 0.67142857, 0.71428571,
+       0.68571429, 0.75714286, 0.72857143, 0.75714286, 0.68571429,
+       0.77142857, 0.77142857, 0.8       , 0.75714286])
+#Plot model accuracy for Different number of Neighbors
+
+plt.plot(range(1,k),mean_acc,'g')           #)           , mean_train, 'b')
+[<matplotlib.lines.Line2D at 0x17acfcbef10>]
+
+Decision Tree
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import classification_report, confusion_matrix
+k=10
+mean_dec = np.zeros((k-1))
+
+for n in range(1,k):
+    #Train Model and Predict 
+    dectree = DecisionTreeClassifier(criterion="entropy", max_depth = n)
+    dectree.fit(X_train, y_train)
+    yhat_dec = dectree.predict(X_test)
+    mean_dec[n-1] = np.mean(yhat_dec==y_test)
+
+mean_dec
+array([0.82857143, 0.82857143, 0.82857143, 0.71428571, 0.8       ,
+       0.72857143, 0.74285714, 0.72857143, 0.72857143])
+plt.plot(range(1,k),mean_dec,'g')
+[<matplotlib.lines.Line2D at 0x17acf791040>]
+
+Support Vector Machine
+from sklearn import svm
+clf_rbf = svm.SVC(kernel='rbf')
+clf_pol = svm.SVC(kernel='poly')
+clf_lin = svm.SVC(kernel='linear')
+clf_rbf.fit(X_train, y_train)
+clf_lin.fit(X_train, y_train)
+clf_pol.fit(X_train, y_train)
+SVC(kernel='poly')
+#Train Model and Predict 
+yhat_rbf = clf_rbf.predict(X_test)
+svm_acc = accuracy_score(y_test, yhat_rbf)
+svm_acc
+0.7142857142857143
+#Train Model and Predict 
+yhat_lin = clf_lin.predict(X_test)
+svm_acc = accuracy_score(y_test, yhat_lin)
+svm_acc
+0.8285714285714286
+# Addition James
+
+#Train Model and Predict 
+yhat_pol = clf_lin.predict(X_test)
+svm_acc = accuracy_score(y_test, yhat_pol)
+svm_acc
+0.8285714285714286
+print(confusion_matrix(y_test, yhat_rbf))
+[[ 2 10]
+ [10 48]]
+Logistic Regression
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion_matrix
+
+LR = LogisticRegression(C=0.005, solver='liblinear').fit(X_train,y_train)  #lbfgs
+LR
+LR.fit(X_train, y_train)
+yhat_lr = LR.predict(X_test)
+yhat_lrprob = LR.predict_proba(X_test)
+#Train Model and Predict 
+LR.fit(X_train, y_train)
+yhat_lr = LR.predict(X_test)
+
+#Predict probabilities
+yhat_lrprob = LR.predict_proba(X_test)
+print(confusion_matrix(y_test, yhat_lr))
+[[ 4  8]
+ [ 7 51]]
+# from sklearn.metrics import jaccard_similarity_score
+from sklearn.metrics import jaccard_score
+jaccard_score(y_test, yhat, pos_label="PAIDOFF")
+
+from sklearn.metrics import log_loss
+print(log_loss(y_test, yhat_lrprob))
+
+print(classification_report(y_test, yhat_lr))
+0.590535048736866
+              precision    recall  f1-score   support
+
+  COLLECTION       0.36      0.33      0.35        12
+     PAIDOFF       0.86      0.88      0.87        58
+
+    accuracy                           0.79        70
+   macro avg       0.61      0.61      0.61        70
+weighted avg       0.78      0.79      0.78        70
+
+Model Evaluation using Test set
+from sklearn.metrics import jaccard_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import log_loss
+First, download and load the test set:
+
+!wget -O loan_test.csv https://s3-api.us-geo.objectstorage.softlayer.net/cf-courses-data/CognitiveClass/ML0101ENv3/labs/loan_test.csv
+'wget' is not recognized as an internal or external command,
+operable program or batch file.
+Load Test set for evaluation
+test_df = pd.read_csv('loan_test.csv')
+test_df.head()
+Unnamed: 0	Unnamed: 0.1	loan_status	Principal	terms	effective_date	due_date	age	education	Gender
+0	1	1	PAIDOFF	1000	30	9/8/2016	10/7/2016	50	Bechalor	female
+1	5	5	PAIDOFF	300	7	9/9/2016	9/15/2016	35	Master or Above	male
+2	21	21	PAIDOFF	1000	30	9/10/2016	10/9/2016	43	High School or Below	female
+3	24	24	PAIDOFF	1000	30	9/10/2016	10/9/2016	26	college	male
+4	35	35	PAIDOFF	800	15	9/11/2016	9/25/2016	29	Bechalor	male
+test_df['due_date'] = pd.to_datetime(test_df['due_date'])
+test_df['effective_date'] = pd.to_datetime(test_df['effective_date'])
+
+test_df['dayofweek'] = test_df['effective_date'].dt.dayofweek
+test_df['weekend'] = test_df['dayofweek'].apply(lambda x: 1 if (x>3)  else 0)
+test_df['Gender'].replace(to_replace=['male','female'], value=[0,1],inplace=True)
+
+Feature_test = test_df[['Principal','terms','age','Gender','weekend']]
+Feature_test = pd.concat([Feature_test,pd.get_dummies(test_df['education'])], axis=1)
+Feature_test.drop(['Master or Above'], axis = 1,inplace=True)
+Feature_test.head()
+Principal	terms	age	Gender	weekend	Bechalor	High School or Below	college
+0	1000	30	50	1	0	1	0	0
+1	300	7	35	0	1	0	0	0
+2	1000	30	43	1	1	0	1	0
+3	1000	30	26	0	1	0	0	1
+4	800	15	29	0	1	1	0	0
+X = Feature_test
+
+
+X_eval = preprocessing.StandardScaler().fit(X).transform(X)
+X_eval[0:5]
+array([[ 0.49362588,  0.92844966,  3.05981865,  1.97714211, -1.30384048,
+         2.39791576, -0.79772404, -0.86135677],
+       [-3.56269116, -1.70427745,  0.53336288, -0.50578054,  0.76696499,
+        -0.41702883, -0.79772404, -0.86135677],
+       [ 0.49362588,  0.92844966,  1.88080596,  1.97714211,  0.76696499,
+        -0.41702883,  1.25356634, -0.86135677],
+       [ 0.49362588,  0.92844966, -0.98251057, -0.50578054,  0.76696499,
+        -0.41702883, -0.79772404,  1.16095912],
+       [-0.66532184, -0.78854628, -0.47721942, -0.50578054,  0.76696499,
+         2.39791576, -0.79772404, -0.86135677]])
+y_eval = test_df['loan_status'].values
+y[0:5]
+array(['PAIDOFF', 'PAIDOFF', 'PAIDOFF', 'PAIDOFF', 'PAIDOFF'],
+      dtype=object)
+test_X = preprocessing.StandardScaler().fit(Feature_test).transform(Feature_test)
+test_X[0:5]
+array([[ 0.49362588,  0.92844966,  3.05981865,  1.97714211, -1.30384048,
+         2.39791576, -0.79772404, -0.86135677],
+       [-3.56269116, -1.70427745,  0.53336288, -0.50578054,  0.76696499,
+        -0.41702883, -0.79772404, -0.86135677],
+       [ 0.49362588,  0.92844966,  1.88080596,  1.97714211,  0.76696499,
+        -0.41702883,  1.25356634, -0.86135677],
+       [ 0.49362588,  0.92844966, -0.98251057, -0.50578054,  0.76696499,
+        -0.41702883, -0.79772404,  1.16095912],
+       [-0.66532184, -0.78854628, -0.47721942, -0.50578054,  0.76696499,
+         2.39791576, -0.79772404, -0.86135677]])
+test_y = test_df['loan_status'].values
+test_y[0:5]
+array(['PAIDOFF', 'PAIDOFF', 'PAIDOFF', 'PAIDOFF', 'PAIDOFF'],
+      dtype=object)
+neig_eval = KNeighborsClassifier(n_neighbors =7)
+neig_eval.fit(X_train, y_train)
+yhat_knn_eval = neig_eval.predict(X_eval)
+    
+dectree_eval = DecisionTreeClassifier(criterion="entropy", max_depth = 4)
+dectree_eval.fit(X_train, y_train)
+yhat_dec_eval = dectree_eval.predict(X_eval)
+
+clf_lin_eval = svm.SVC(kernel='linear')
+clf_lin_eval.fit(X_train, y_train)
+yhat_svm_eval = clf_lin_eval.predict(X_eval)
+
+LR_eval = LogisticRegression(C=0.005, solver='liblinear').fit(X_train,y_train)  #lbfgs
+LR_eval.fit(X_train, y_train)
+yhat_lr_eval = LR_eval.predict(X_eval)
+#Predict probabilities
+yhat_lr_prob = LR_eval.predict_proba(X_eval)
+
+
+
+
+
+
+
+
+
+
